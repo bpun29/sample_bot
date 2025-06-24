@@ -9,25 +9,17 @@
 </head>
 
 <body class="bg-white flex flex-col h-screen">
-    <!-- Header -->
     <header class="bg-gray-200 py-2 font-medium text-lg flex items-center px-4 relative">
-        <button id="toggleSidebar" class="hover:text-blue-800 focus:outline-none absolute left-4">
-            ☰
-        </button>
-        <div class="mx-auto">
-            Chatbot
-        </div>
+        <button id="toggleSidebar" class="hover:text-blue-800 focus:outline-none absolute left-4">☰</button>
+        <div class="mx-auto">Chatbot</div>
     </header>
 
-    <!-- Main Layout -->
-    <div class="flex flex-1 overflow-collapsed">
-
+    <div class="flex flex-1 overflow-hidden">
         <!-- Sidebar -->
         <aside id="sidebar"
             class="bg-gray-100 w-64 p-4 flex flex-col space-y-4 overflow-y-auto transition-all duration-300">
-            <button id="newChatBtn" class="bg-white hover:bg-blue-100 font-semibold py-2 px-4 rounded shadow">
-                New Chat
-            </button>
+            <button id="newChatBtn" class="bg-white hover:bg-blue-100 font-semibold py-2 px-4 rounded shadow">New
+                Chat</button>
             <div>
                 <h3 class="font-semibold mb-2">Chats</h3>
                 <ul id="chatList" class="space-y-1 max-h-[calc(100vh-150px)] overflow-y-auto"></ul>
@@ -35,22 +27,26 @@
         </aside>
 
         <!-- Chat Area -->
-        <div id="chatArea" class="flex flex-col flex-1 overflow-collapsed items-center">
-            <!-- Chat messages -->
+        <div id="chatArea" class="flex flex-col flex-1 overflow-hidden items-center">
             <main id="chat" class="w-full max-w-4xl flex-1 overflow-y-auto p-4"></main>
 
-            <!-- Chat input -->
+            <!-- Input -->
             <footer class="w-full p-4 bg-white">
                 <div class="max-w-4xl mx-auto">
-                    <form id="chatForm"
-                        class="flex items-center space-x-3 bg-white rounded-full border border-gray-300 px-4 py-2">
-                        <input id="input" type="text" placeholder="Type anything..."
-                            class="flex-grow text-gray-700 placeholder-gray-400 rounded-full px-4 py-3 text-base"
-                            autocomplete="off" aria-label="Chat input" />
-                        <button id="sendButton" type="submit"
-                            class="bg-blue-600 text-white px-5 py-3 rounded-full font-semibold hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                            Send
-                        </button>
+                    <form id="chatForm" class="flex flex-col space-y-2">
+                        <div class="flex items-center space-x-3 bg-white rounded-full border border-gray-300 px-4 py-2">
+                            <input type="file" id="imageInput" accept="image/*" class="hidden">
+                            <button type="button" onclick="document.getElementById('imageInput').click()"
+                                class="text-gray-500 hover:text-blue-600 text-xl font-bold">+</button>
+                            <input id="input" type="text" placeholder="Type anything..."
+                                class="flex-grow text-gray-700 placeholder-gray-400 rounded-full px-4 py-3 text-base"
+                                autocomplete="off" />
+                            <button id="sendButton" type="submit"
+                                class="bg-blue-600 text-white px-5 py-3 rounded-full font-semibold hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">Send</button>
+                        </div>
+                        <div id="imagePreviewContainer" class="hidden">
+                            <img id="imagePreview" src="" class="max-h-32 rounded-lg border border-gray-300" />
+                        </div>
                     </form>
                 </div>
             </footer>
@@ -58,110 +54,207 @@
     </div>
 
     <script>
-        const chat = document.getElementById('chat')
-        const input = document.getElementById('input')
-        const sendButton = document.getElementById('sendButton')
-        const newChatBtn = document.getElementById('newChatBtn')
-        const chatList = document.getElementById('chatList')
-        const sidebar = document.getElementById('sidebar')
-        const toggleSidebarBtn = document.getElementById('toggleSidebar')
-        const chatArea = document.getElementById('chatArea');
+        const chat = document.getElementById('chat');
+        const input = document.getElementById('input');
+        const sendButton = document.getElementById('sendButton');
+        const imageInput = document.getElementById('imageInput');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const newChatBtn = document.getElementById('newChatBtn');
+        const chatList = document.getElementById('chatList');
+        const sidebar = document.getElementById('sidebar');
+        const toggleSidebarBtn = document.getElementById('toggleSidebar');
 
-        let chats = []
-        let currentChatIndex = 0
+        let chats = [];
+        let currentChatIndex = 0;
+        let pendingImage = null;
 
-        newChat()
+        toggleSidebarBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('hidden');
+        });
 
-        sendButton.onclick = () => sendMessage()
+        newChatBtn.onclick = () => newChat();
+
+        sendButton.onclick = (e) => {
+            e.preventDefault();
+            sendMessage();
+        };
 
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                e.preventDefault()
-                sendMessage()
+                e.preventDefault();
+                sendMessage();
             }
-        })
+        });
 
-        toggleSidebarBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('collapsed')
-            if (sidebar.classList.contains('collapsed')) {
-                chatArea.classList.remove('shifted')
-            } else {
-                chatArea.classList.add('shifted')
-            }
-        })
+        imageInput.addEventListener('change', function () {
+            const file = this.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                pendingImage = e.target.result;
+                imagePreview.src = pendingImage;
+                imagePreviewContainer.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        });
 
-        newChatBtn.onclick = () => {
-            newChat()
-            sidebar.classList.remove('collapsed')
-            chatArea.classList.add('shifted')
+        function newChat(initial = []) {
+            const index = chats.push([]) - 1;
+            currentChatIndex = index;
+            chats[index] = initial;
+            renderChatList();
+            renderChatMessages();
+            input.value = '';
+            input.focus();
         }
-        function newChat() {
-            chats.push([])
-            currentChatIndex = chats.length - 1
-            renderChatList()
-            renderChatMessages()
-            input.value = ''
-            input.focus()
-        }
 
-        function sendMessage() {
-            const message = input.value.trim()
-            if (!message) return
-            chats[currentChatIndex].push({ from: 'user', text: message })
-            input.value = ''
-            renderChatMessages()
+        function sendMessage(textOverride) {
+            const message = textOverride || input.value.trim();
+            if (!message && !pendingImage) return;
+
+            chats[currentChatIndex].push({
+                from: 'user',
+                text: message || undefined,
+                image: pendingImage || undefined
+            });
+
+            input.value = '';
+            pendingImage = null;
+            imagePreview.src = '';
+            imagePreviewContainer.classList.add('hidden');
+
+            renderChatMessages();
+
             setTimeout(() => {
-                chats[currentChatIndex].push({ from: 'bot', text: 'hi' })
-                renderChatMessages()
-            }, 500)
+                let response = { from: 'bot', text: "hi" };
+                const lowerMsg = (message || '').toLowerCase();
+
+                if (lowerMsg === 'menu') {
+                    response = {
+                        from: 'bot',
+                        text: 'Here are your options:',
+                        options: ['register', 'subject selective', 'credits']
+                    };
+                } else if (lowerMsg === 'subject selective') {
+                    response = {
+                        from: 'bot',
+                        text: 'Select a subject:',
+                        options: ['Subject1', 'Subject2', 'Subject3'],
+                        column: true
+                    };
+                } else if (['register', 'credits', 'subject1', 'subject2', 'subject3'].includes(lowerMsg)) {
+                    const link = `https://university.example.com/${lowerMsg.replace(/\s+/g, '-').toLowerCase()}`;
+                    response = {
+                        from: 'bot',
+                        text: `Here is the link to be accessed:\n${link}`
+                    };
+                } else if (lowerMsg.includes('prof.peter available time')) {
+                    response = {
+                        from: 'bot',
+                        text: 'Here is Prof. Peter’s availability:',
+                        image: 'https://via.placeholder.com/400x200?text=Calendar+Preview'
+                    };
+                }
+
+                chats[currentChatIndex].push(response);
+                renderChatMessages();
+            }, 700);
         }
 
         function renderChatMessages() {
-            chat.innerHTML = ''
-            chats[currentChatIndex].forEach(msg => {
-                const div = document.createElement('div')
-                if (msg.from === 'user') {
-                    div.className = "flex justify-end space-x-2 items-start"
-                    div.innerHTML = `
-            <div class="bg-gray-200 rounded-lg p-3 max-w-[70%]">${escapeHtml(msg.text)}</div>
-            <div class="bg-gray-200 w-10 h-10 rounded-full flex-shrink-0"></div>
-          `
-                } else {
-                    div.className = "flex items-start space-x-2"
-                    div.innerHTML = `
-            <div class="bg-gray-200 w-10 h-10 rounded-full flex-shrink-0"></div>
-            <div class="bg-gray-200 rounded-lg p-3 max-w-[70%]">${escapeHtml(msg.text)}</div>
-          `
+            chat.innerHTML = '';
+            chats[currentChatIndex].forEach((msg) => {
+                const div = document.createElement('div');
+                const isUser = msg.from === 'user';
+                const alignmentClass = isUser ? 'justify-end' : 'justify-start';
+                const profileSide = `<div class="bg-gray-200 w-10 h-10 rounded-full flex-shrink-0"></div>`;
+
+                let optionsHtml = '';
+                if (msg.options) {
+                    const layout = msg.column ? 'flex-col space-y-2' : 'flex-wrap space-x-2';
+                    optionsHtml = `<div class="mt-2 flex ${layout}">` +
+                        msg.options.map(opt =>
+                            `<button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                    onclick="sendMessage('${opt}')">${opt}</button>`
+                        ).join('') +
+                        `</div>`;
                 }
-                chat.appendChild(div)
-            })
-            chat.scrollTop = chat.scrollHeight
+
+                let content = '';
+                if (msg.text) {
+                    const urlMatch = msg.text.match(/https?:\/\/[^\s]+/);
+                    if (urlMatch) {
+                        const link = urlMatch[0];
+                        const before = msg.text.split(link)[0];
+                        const urlObj = new URL(link);
+                        if (before.trim()) {
+                            content += `<div>${escapeHtml(before.trim())}</div>`;
+                        }
+                        content += `
+                  <a href="${link}" target="_blank" class="block border rounded-lg overflow-hidden shadow hover:shadow-lg transition w-72 bg-white mt-2">
+                    <img src="https://onlinepngtools.com/images/png/illustrations/convert-png-to-data-uri.png" class="w-full h-40 object-cover" />
+                    <div class="p-3">
+                      <div class="font-semibold text-sm mb-1">This is an info</div>
+                      <div class="text-blue-500 text-xs mt-2">${urlObj.hostname}</div>
+                    </div>
+                  </a>`;
+                    } else {
+                        content += `<div>${escapeHtml(msg.text)}</div>`;
+                    }
+                }
+
+                if (msg.image) {
+                    content += `<img src="${msg.image}" class="mt-2 rounded-lg max-w-xs max-h-64" />`;
+                }
+
+                div.className = `flex ${alignmentClass} items-start space-x-2 mb-2 w-full`;
+
+                div.innerHTML = isUser
+                    ? `
+              <div class="bg-gray-200 rounded-lg px-4 py-3 max-w-[70%] w-fit text-black">
+                ${content}
+              </div>
+              ${profileSide}`
+                    : `
+              ${profileSide}
+              <div class="bg-gray-200 rounded-lg px-4 py-3 max-w-[70%] w-fit text-black">
+                ${content}
+                ${optionsHtml}
+              </div>`;
+
+                chat.appendChild(div);
+            });
+
+            chat.scrollTop = chat.scrollHeight;
         }
 
         function renderChatList() {
-            chatList.innerHTML = ''
+            chatList.innerHTML = '';
             chats.forEach((chatSession, i) => {
-                const li = document.createElement('li')
-                li.className = `cursor-pointer px-3 py-2 rounded hover:bg-blue-200 ${i === currentChatIndex ? 'bg-blue-300 font-semibold' : ''}`
-                li.textContent = `Chat ${i + 1}`
+                const li = document.createElement('li');
+                li.className = `cursor-pointer px-3 py-2 rounded hover:bg-blue-200 ${i === currentChatIndex ? 'bg-blue-300 font-semibold' : ''}`;
+                li.textContent = `Chat ${i + 1}`;
                 li.onclick = () => {
-                    currentChatIndex = i
-                    renderChatMessages()
-                    renderChatList()
-                    sidebar.classList.remove('hidden')
-                }
-                chatList.appendChild(li)
-            })
+                    currentChatIndex = i;
+                    renderChatMessages();
+                    renderChatList();
+                };
+                chatList.appendChild(li);
+            });
         }
 
-        function escapeHtml(text) {
+        function escapeHtml(text = '') {
             return text.replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;")
+                .replace(/'/g, "&#039;");
         }
+        // Initialize first chat
+        newChat();
     </script>
+
 </body>
 
 </html>

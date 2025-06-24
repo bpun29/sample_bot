@@ -1,0 +1,17 @@
+#sidebar {
+    transition: transform 0.3s ease;
+    transform: translateX(0);
+  }
+  
+  #sidebar.collapsed {
+    transform: translateX(-100%);
+  }
+  
+  footer {
+    transition: margin-left 0.3s ease;
+  }
+  
+  footer.shifted {
+    margin-left: 16rem; /* same width as sidebar */
+  }
+  

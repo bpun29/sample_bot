@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chatbot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        #sidebar {
+            transition: transform 0.3s ease;
+            transform: translateX(0);
+        }
+
+        #sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        footer {
+            transition: margin-left 0.3s ease;
+        }
+
+        footer.shifted {
+            margin-left: 16rem;
+            /* width of sidebar */
+        }
+
+        #chatArea {
+            transition: transform 0.3s ease;
+            transform: translateX(0);
+        }
+
+        #chatArea.shifted {
+            transform: translateX(16rem);
+            /* same as sidebar width */
+        }
+    </style>
+</head>
+
+<body class="bg-white flex flex-col h-screen">
+
+    <!-- Header -->
+    <header class="bg-gray-200 py-2 font-medium text-lg flex items-center px-4 relative">
+        <button id="toggleSidebar" class="hover:text-blue-800 focus:outline-none absolute left-4">
+            ☰
+        </button>
+        <div class="mx-auto">
+            Chatbot
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="flex flex-1 overflow-collapsed">
+
+        <!-- Sidebar -->
+        <aside id="sidebar"
+            class="bg-gray-100 w-64 p-4 flex flex-col space-y-4 overflow-y-auto transition-all duration-300">
+            <button id="newChatBtn" class="bg-white hover:bg-blue-100 font-semibold py-2 px-4 rounded shadow">
+                New Chat
+            </button>
+            <div>
+                <h3 class="font-semibold mb-2">Chats</h3>
+                <ul id="chatList" class="space-y-1 max-h-[calc(100vh-150px)] overflow-y-auto"></ul>
+            </div>
+        </aside>
+
+        <!-- Chat Area -->
+        <div id="chatArea" class="flex flex-col flex-1 overflow-collapsed items-center">
+            <!-- Chat messages -->
+            <main id="chat" class="w-full max-w-4xl flex-1 overflow-y-auto p-4"></main>
+
+            <!-- Chat input -->
+            <footer class="w-full p-4 bg-white">
+                <div class="max-w-4xl mx-auto">
+                    <form id="chatForm"
+                        class="flex items-center space-x-3 bg-white rounded-full border border-gray-300 px-4 py-2">
+                        <input id="input" type="text" placeholder="Type anything..."
+                            class="flex-grow text-gray-700 placeholder-gray-400 rounded-full px-4 py-3 text-base"
+                            autocomplete="off" aria-label="Chat input" />
+                        <button id="sendButton" type="submit"
+                            class="bg-blue-600 text-white px-5 py-3 rounded-full font-semibold hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                            Send
+                        </button>
+                    </form>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        const chat = document.getElementById('chat')
+        const input = document.getElementById('input')
+        const sendButton = document.getElementById('sendButton')
+        const newChatBtn = document.getElementById('newChatBtn')
+        const chatList = document.getElementById('chatList')
+        const sidebar = document.getElementById('sidebar')
+        const toggleSidebarBtn = document.getElementById('toggleSidebar')
+        const chatArea = document.getElementById('chatArea');
+
+        let chats = []
+        let currentChatIndex = 0
+
+        newChat()
+
+        sendButton.onclick = () => sendMessage()
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault()
+                sendMessage()
+            }
+        })
+
+        toggleSidebarBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed')
+            if (sidebar.classList.contains('collapsed')) {
+                chatArea.classList.remove('shifted')
+            } else {
+                chatArea.classList.add('shifted')
+            }
+        })
+
+        newChatBtn.onclick = () => {
+            newChat()
+            sidebar.classList.remove('collapsed')
+            chatArea.classList.add('shifted')
+        }
+        function newChat() {
+            chats.push([])
+            currentChatIndex = chats.length - 1
+            renderChatList()
+            renderChatMessages()
+            input.value = ''
+            input.focus()
+        }
+
+        function sendMessage() {
+            const message = input.value.trim()
+            if (!message) return
+            chats[currentChatIndex].push({ from: 'user', text: message })
+            input.value = ''
+            renderChatMessages()
+            setTimeout(() => {
+                chats[currentChatIndex].push({ from: 'bot', text: 'hi' })
+                renderChatMessages()
+            }, 500)
+        }
+
+        function renderChatMessages() {
+            chat.innerHTML = ''
+            chats[currentChatIndex].forEach(msg => {
+                const div = document.createElement('div')
+                if (msg.from === 'user') {
+                    div.className = "flex justify-end space-x-2 items-start"
+                    div.innerHTML = `
+            <div class="bg-gray-200 rounded-lg p-3 max-w-[70%]">${escapeHtml(msg.text)}</div>
+            <div class="bg-gray-200 w-10 h-10 rounded-full flex-shrink-0"></div>
+          `
+                } else {
+                    div.className = "flex items-start space-x-2"
+                    div.innerHTML = `
+            <div class="bg-gray-200 w-10 h-10 rounded-full flex-shrink-0"></div>
+            <div class="bg-gray-200 rounded-lg p-3 max-w-[70%]">${escapeHtml(msg.text)}</div>
+          `
+                }
+                chat.appendChild(div)
+            })
+            chat.scrollTop = chat.scrollHeight
+        }
+
+        function renderChatList() {
+            chatList.innerHTML = ''
+            chats.forEach((chatSession, i) => {
+                const li = document.createElement('li')
+                li.className = `cursor-pointer px-3 py-2 rounded hover:bg-blue-200 ${i === currentChatIndex ? 'bg-blue-300 font-semibold' : ''}`
+                li.textContent = `Chat ${i + 1}`
+                li.onclick = () => {
+                    currentChatIndex = i
+                    renderChatMessages()
+                    renderChatList()
+                    sidebar.classList.remove('hidden')
+                }
+                chatList.appendChild(li)
+            })
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;")
+        }
+    </script>
+
+</body>
+
+</html>

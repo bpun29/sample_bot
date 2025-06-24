@@ -6,39 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Chatbot</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        #sidebar {
-            transition: transform 0.3s ease;
-            transform: translateX(0);
-        }
-
-        #sidebar.collapsed {
-            transform: translateX(-100%);
-        }
-
-        footer {
-            transition: margin-left 0.3s ease;
-        }
-
-        footer.shifted {
-            margin-left: 16rem;
-            /* width of sidebar */
-        }
-
-        #chatArea {
-            transition: transform 0.3s ease;
-            transform: translateX(0);
-        }
-
-        #chatArea.shifted {
-            transform: translateX(16rem);
-            /* same as sidebar width */
-        }
-    </style>
 </head>
 
 <body class="bg-white flex flex-col h-screen">
-
     <!-- Header -->
     <header class="bg-gray-200 py-2 font-medium text-lg flex items-center px-4 relative">
         <button id="toggleSidebar" class="hover:text-blue-800 focus:outline-none absolute left-4">
@@ -192,7 +162,6 @@
                 .replace(/'/g, "&#039;")
         }
     </script>
-
 </body>
 
 </html>

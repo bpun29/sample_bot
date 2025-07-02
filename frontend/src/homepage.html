@@ -56,7 +56,8 @@
 
                 <!-- Dropdown panel -->
                 <div id="addDropdown"
-                  class="absolute z-10 left-0 mt-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-2 hidden">
+  class="absolute z-10 left-0 bottom-full mb-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-2 hidden">
+
                   <button type="button" id="addButton"
                     class="w-full text-left text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600 px-2 py-1 rounded">
                     Add Photo/File
@@ -239,92 +240,231 @@
       }, 700);
     }
 
-    function renderChatMessages() {
-      chat.innerHTML = '';
+function renderChatMessages() {
+  chat.innerHTML = '';
 
-      chats[currentChatIndex].forEach((msg) => {
-        const div = document.createElement('div');
-        const isUser = msg.from === 'user';
-        const alignmentClass = isUser ? 'justify-end' : 'justify-start';
-        const profileSide = `<div class="bg-gray-200 dark:bg-gray-600 w-10 h-10 rounded-full flex-shrink-0"></div>`;
+  chats[currentChatIndex].forEach((msg, index) => {
+    const isUser = msg.from === 'user';
+    const div = document.createElement('div');
+    const alignmentClass = isUser ? 'justify-end' : 'justify-start';
+    const profileSide = `<div class="bg-gray-200 dark:bg-gray-600 w-10 h-10 rounded-full flex-shrink-0"></div>`;
 
-        let optionsHtml = '';
-        if (msg.options) {
-          const layout = 'flex-col space-y-2';
-          optionsHtml = `<div class="mt-2 flex ${layout}">` +
-            msg.options.map(opt =>
-              `<button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-                onclick="sendMessage('${opt}')">${opt}</button>`
-            ).join('') +
-            `</div>`;
-        }
+    let content = '';
 
-        let content = '';
-        let copyText = '';
+    // ========== USER SIDE ==========
+    if (isUser) {
+      const isEditing = msg.editing;
 
-        if (msg.text) {
-          const urlMatch = msg.text.match(/https?:\/\/[^\s]+/);
-          if (urlMatch) {
-            const link = urlMatch[0];
-            const before = msg.text.split(link)[0].trim();
-            const urlObj = new URL(link);
-            const hostname = urlObj.hostname.replace(/^www\./, '');
+      if (isEditing) {
+        content = `
+          <textarea class="w-full mt-2 p-2 rounded text-sm bg-white text-black" rows="3">${escapeHtml(msg.text)}</textarea>
+          <div class="flex justify-end mt-1 space-x-2">
+            <button onclick="saveEdit(${index}, this)" class="text-green-600 text-xs hover:underline">✅ Save</button>
+            <button onclick="cancelEdit(${index})" class="text-gray-500 text-xs hover:underline">✖ Cancel</button>
+          </div>
+        `;
+      } else {
+        content = `
+          <div>${escapeHtml(msg.text)}</div>
+          <button onclick="startEdit(${index})"
+            class="mt-2 ml-2 text-xs text-blue-500 hover:text-blue-700">Edit</button>
+        `;
 
-            copyText = before
-              ? `${before}: ${hostname}`
-              : `Here is the link to be accessed: ${hostname}`;
-
-            if (before) {
-              content += `<div>${escapeHtml(before)}</div>`;
-            }
-
-            content += `
-  <a href="${link}" target="_blank"
-    class="block border rounded-lg overflow-hidden shadow hover:shadow-lg transition w-full max-w-xs sm:max-w-sm bg-white dark:bg-gray-700 mt-2">
-    <img src="https://onlinepngtools.com/images/png/illustrations/convert-png-to-data-uri.png"
-      class="w-full h-40 object-cover" />
-    <div class="p-3">
-      <div class="font-semibold text-sm mb-1">This is an info</div>
-      <div class="text-blue-500 text-xs mt-2">${hostname}</div>
-    </div>
-  </a>`;
-
-          } else {
-            copyText = msg.text;
-            content += `<div>${escapeHtml(msg.text)}</div>`;
-          }
-        }
-
-        if (msg.image) {
-          content += `<img src="${msg.image}" class="mt-2 rounded-lg w-full max-w-full h-auto object-contain" />`;
-        }
-
-        const copyButton = copyText
-          ? `<button onclick="copyToClipboard('${copyText.replace(/'/g, "\\'")}', this)"
-                   class="mt-3 text-xs text-blue-500 hover:text-blue-700">📋 Copy</button>`
-          : '';
-
-        div.className = `flex ${alignmentClass} items-start space-x-2 mb-2 w-full`;
-
-        div.innerHTML = isUser
-          ? `
-            <div class="bg-gray-200 dark:bg-gray-700 rounded-lg px-4 py-3 max-w-[70%] w-fit text-black dark:text-white">
-              ${content}
+        if (msg.history && msg.history.length > 0) {
+          content += `
+            <button onclick="toggleHistory(this)" class="text-xs text-gray-500 hover:text-gray-700 mt-2">ViewPast</button>
+            <div class="hidden mt-2 text-xs bg-gray-100 dark:bg-gray-600 rounded p-2">
+              ${msg.history.map(h => `<div class="mb-2">${escapeHtml(h.text || '')}</div>`).join('')}
             </div>
-            ${profileSide}`
-          : `
-            ${profileSide}
-            <div class="bg-gray-200 dark:bg-gray-700 rounded-lg px-4 py-3 max-w-[70%] w-fit text-black dark:text-white">
-              ${content}
-              ${optionsHtml}
-              ${copyButton}
-            </div>`;
+          `;
+        }
+      }
 
-        chat.appendChild(div);
-      });
-
-      chat.scrollTop = chat.scrollHeight;
+      div.className = `flex ${alignmentClass} items-start space-x-2 mb-2 w-full`;
+      div.innerHTML = `
+        <div class="bg-gray-200 dark:bg-gray-700 rounded-lg px-4 py-3 max-w-[70%] w-fit text-black dark:text-white">
+          ${content}
+        </div>
+        ${profileSide}`;
     }
+
+    // ========== BOT SIDE ==========
+    else {
+      let copyText = '';
+      if (msg.text) {
+        const urlMatch = msg.text.match(/https?:\/\/[^\s]+/);
+        if (urlMatch) {
+          const link = urlMatch[0];
+          const before = msg.text.split(link)[0].trim();
+          const hostname = new URL(link).hostname.replace(/^www\./, '');
+          copyText = before ? `${before}: ${hostname}` : `Link: ${hostname}`;
+          if (before) content += `<div>${escapeHtml(before)}</div>`;
+          content += `
+            <a href="${link}" target="_blank"
+              class="block border rounded-lg overflow-hidden shadow hover:shadow-lg transition w-full max-w-xs sm:max-w-sm bg-white dark:bg-gray-700 mt-2">
+              <img src="https://onlinepngtools.com/images/png/illustrations/convert-png-to-data-uri.png"
+                class="w-full h-40 object-cover" />
+              <div class="p-3">
+                <div class="font-semibold text-sm mb-1">This is an info</div>
+                <div class="text-blue-500 text-xs mt-2">${hostname}</div>
+              </div>
+            </a>`;
+        } else {
+          copyText = msg.text;
+          content += `<div>${escapeHtml(msg.text)}</div>`;
+        }
+      }
+
+      if (msg.image) {
+        content += `<img src="${msg.image}" class="mt-2 rounded-lg w-full max-w-full h-auto object-contain" />`;
+      }
+
+      const copyButton = copyText
+        ? `<button onclick="copyToClipboard('${copyText.replace(/'/g, "\\'")}', this)"
+                   class="mt-3 text-xs text-blue-500 hover:text-blue-700">Copy</button>`
+        : '';
+
+      let optionsHtml = '';
+      if (msg.options) {
+        const layout = 'flex-col space-y-2';
+        optionsHtml = `<div class="mt-2 flex ${layout}">` +
+          msg.options.map(opt =>
+            `<button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+              onclick="sendMessage('${opt}')">${opt}</button>`
+          ).join('') +
+          `</div>`;
+      }
+
+      let historyHtml = '';
+      if (msg.history && msg.history.length > 0) {
+        historyHtml = `
+          <button onclick="toggleHistory(this)" class="text-xs text-gray-500 hover:text-gray-700 mt-2">ViewPast</button>
+          <div class="hidden mt-2 text-xs bg-gray-100 dark:bg-gray-600 rounded p-2">
+            ${msg.history.map(h => `
+              ${h.text ? `<div class="mb-2">${escapeHtml(h.text)}</div>` : ''}
+              ${h.image ? `<img src="${h.image}" class="mb-2 rounded w-full max-w-full h-auto object-contain" />` : ''}
+            `).join('')}
+          </div>
+        `;
+      }
+
+      div.className = `flex ${alignmentClass} items-start space-x-2 mb-2 w-full`;
+      div.innerHTML = `
+        ${profileSide}
+        <div class="bg-gray-200 dark:bg-gray-700 rounded-lg px-4 py-3 max-w-[70%] w-fit text-black dark:text-white">
+          ${content}
+          ${optionsHtml}
+          ${copyButton}
+          ${historyHtml}
+        </div>`;
+    }
+
+    chat.appendChild(div);
+  });
+
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function startEdit(index) {
+  chats[currentChatIndex][index].editing = true;
+  renderChatMessages();
+}
+
+function cancelEdit(index) {
+  delete chats[currentChatIndex][index].editing;
+  renderChatMessages();
+}
+
+function saveEdit(index, btn) {
+  // Find the closest message bubble (user-side)
+  const bubble = btn.closest('.flex.items-start');
+
+  if (!bubble) {
+    console.error('❌ Could not find message bubble for index', index);
+    return;
+  }
+
+  // Scoped textarea inside the current bubble
+  const textarea = bubble.querySelector('textarea');
+
+  if (!textarea) {
+    console.error('❌ Textarea not found inside bubble at index', index);
+    return;
+  }
+
+  const newText = textarea.value.trim();
+  if (!newText) return;
+
+  const msg = chats[currentChatIndex][index];
+
+  // Skip if text hasn't changed
+  if (msg.text === newText) {
+    msg.editing = false;
+    renderChatMessages();
+    return;
+  }
+
+  // Save previous version to history
+  if (!msg.history) msg.history = [];
+  msg.history.push({ text: msg.text });
+
+  msg.text = newText;
+  msg.editing = false;
+
+  // Update corresponding bot reply if it's next in line
+  const botMsg = chats[currentChatIndex][index + 1];
+  if (botMsg && botMsg.from === 'bot') {
+    if (!botMsg.history) botMsg.history = [];
+    botMsg.history.push({
+      text: botMsg.text,
+      image: botMsg.image || null,
+    });
+
+    const updated = generateBotResponse(newText);
+
+    botMsg.text = updated.text;
+    botMsg.image = updated.image || null;
+    botMsg.options = updated.options || null;
+    botMsg.column = updated.column || false;
+  }
+
+  renderChatMessages();
+}
+
+function generateBotResponse(inputText) {
+  const lowerMsg = inputText.toLowerCase();
+
+  if (lowerMsg === 'menu') {
+    return {
+      text: 'Here are your options:',
+      options: ['register', 'subject selective', 'credits']
+    };
+  } else if (lowerMsg === 'subject selective') {
+    return {
+      text: 'Select a subject:',
+      options: ['Subject1', 'Subject2', 'Subject3'],
+      column: true
+    };
+  } else if (['register', 'credits', 'subject1', 'subject2', 'subject3'].includes(lowerMsg)) {
+    const link = `https://university.example.com/${lowerMsg.replace(/\s+/g, '-').toLowerCase()}`;
+    return {
+      text: `Here is the link to be accessed:\n${link}`
+    };
+  } else if (lowerMsg.includes('prof.peter available time')) {
+    return {
+      text: 'Here is Prof. Peter’s availability:',
+      image: 'https://via.placeholder.com/400x200?text=Calendar+Preview'
+    };
+  }
+
+  return { text: 'hi' };
+}
+
+
+function toggleHistory(btn) {
+  const box = btn.nextElementSibling;
+  if (box) box.classList.toggle('hidden');
+}
 
     function renderChatList() {
       chatList.innerHTML = '';

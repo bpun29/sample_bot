@@ -16,20 +16,20 @@
 <body class="bg-white dark:bg-gray-900 text-black dark:text-white flex flex-col h-screen">
   <!-- Header -->
   <header class="bg-gray-200 dark:bg-gray-800 py-2 font-medium text-lg flex items-center px-4 relative">
-    <button id="toggleSidebar" class="hover:text-blue-800 focus:outline-none absolute left-4 md:hidden">☰</button>
+    <button id="toggleSidebar" class="hover:text-blue-800 focus:outline-none absolute left-4">☰</button>
     <div class="mx-auto">Chatbot</div>
     <button id="darkModeToggle"
       class="absolute right-4 text-sm border px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700">theme</button>
   </header>
 
-  <!-- Layout -->
   <div class="flex flex-col md:flex-row flex-1 overflow-hidden">
     <!-- Sidebar -->
     <aside id="sidebar"
       class="bg-gray-100 dark:bg-gray-800 w-full md:w-64 p-4 space-y-4 overflow-y-auto transition-all duration-300 hidden md:block">
       <button id="newChatBtn"
-        class="bg-white dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900 font-semibold py-2 px-4 rounded shadow">New
-        Chat</button>
+        class="bg-white dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900 font-semibold py-2 px-4 rounded shadow">
+        New Chat
+      </button>
       <div>
         <h3 class="font-semibold mb-2">Chats</h3>
         <ul id="chatList" class="space-y-1 max-h-[calc(100vh-150px)] overflow-y-auto"></ul>
@@ -53,11 +53,9 @@
                   class="w-8 h-8 flex items-center justify-center rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
                   +
                 </button>
-
-                <!-- Dropdown panel -->
+                <!-- Dropdown panel after click '+'-->
                 <div id="addDropdown"
-  class="absolute z-10 left-0 bottom-full mb-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-2 hidden">
-
+                  class="absolute z-10 left-0 bottom-full mb-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-2 hidden">
                   <button type="button" id="addButton"
                     class="w-full text-left text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600 px-2 py-1 rounded">
                     Add Photo/File
@@ -65,8 +63,8 @@
                 </div>
               </div>
 
-              <!-- Hidden File Input -->
-              <input type="file" id="fileInput" class="hidden"
+              <!-- File Input -->
+              <input type="file" id="fileInput" class="hidden" multiple
                 accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" />
 
               <!-- Text Input -->
@@ -82,8 +80,9 @@
             </div>
 
             <!-- Image Preview -->
-            <div id="imagePreviewContainer" class="hidden mt-2">
-              <img id="imagePreview" src="" class="max-h-32 rounded-lg border border-gray-300 dark:border-gray-600" />
+            <div id="previewContainer" class="hidden mt-2">
+              <img id="previewContainer" src=""
+                class="max-h-32 rounded-lg border border-gray-300 dark:border-gray-600" />
             </div>
           </form>
         </div>
@@ -98,8 +97,7 @@
     const sendButton = document.getElementById('sendButton');
     const fileInput = document.getElementById('fileInput');
     const addButton = document.getElementById('addButton');
-    const imagePreviewContainer = document.getElementById('imagePreviewContainer');
-    const imagePreview = document.getElementById('imagePreview');
+    const previewContainer = document.getElementById('previewContainer');
     const newChatBtn = document.getElementById('newChatBtn');
     const chatList = document.getElementById('chatList');
     const sidebar = document.getElementById('sidebar');
@@ -116,7 +114,6 @@
     if (localStorage.getItem('theme') === 'dark') {
       document.documentElement.classList.add('dark');
     }
-
     toggleDarkModeBtn.addEventListener('click', () => {
       const isDark = document.documentElement.classList.toggle('dark');
       localStorage.setItem('theme', isDark ? 'dark' : 'light');
@@ -130,7 +127,6 @@
       e.stopPropagation();
       addDropdown.classList.toggle('hidden');
     });
-
     document.addEventListener('click', (e) => {
       if (!addDropdown.contains(e.target) && !toggleAddDropdownBtn.contains(e.target)) {
         addDropdown.classList.add('hidden');
@@ -156,25 +152,45 @@
       fileInput.click();
     });
 
-    fileInput.addEventListener('change', function () {
-      const file = this.files[0];
-      if (!file) return;
+    let pendingFiles = []; // Holds all selected files and images
 
-      if (file.type.startsWith('image/')) {
+    fileInput.addEventListener('change', function () {
+      const files = Array.from(this.files);
+      if (files.length === 0) return;
+      files.forEach(file => {
         const reader = new FileReader();
-        reader.onload = function (e) {
-          pendingImage = e.target.result;
-          imagePreview.src = pendingImage;
-          imagePreviewContainer.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
-      } else {
-        chats[currentChatIndex].push({
-          from: 'user',
-          text: `📎 ${file.name}`
-        });
-        renderChatMessages();
-      }
+
+        // Only read image files as preview
+        if (file.type.startsWith('image/')) {
+          reader.onload = function (e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.className = 'max-w-[100px] mb-2 rounded';
+            previewContainer.appendChild(img);
+
+            pendingFiles.push({
+              name: file.name,
+              type: file.type,
+              size: file.size,
+              dataUrl: e.target.result
+            });
+          };
+          reader.readAsDataURL(file);
+        } else {
+          // For non-image files, just show filename
+          const fileInfo = document.createElement('p');
+          fileInfo.textContent = `📄 ${file.name} (${Math.round(file.size / 1024)} KB)`;
+          fileInfo.className = 'text-gray-700';
+          previewContainer.appendChild(fileInfo);
+
+          pendingFiles.push({
+            name: file.name,
+            type: file.type,
+            size: file.size
+          });
+        }
+      });
+      previewContainer.classList.remove('hidden');
     });
 
     function newChat(initial = []) {
@@ -189,155 +205,173 @@
 
     function sendMessage(textOverride) {
       const message = textOverride || input.value.trim();
-      if (!message && !pendingImage) return;
+      if (!message && pendingFiles.length === 0) return;
 
-      chats[currentChatIndex].push({
+      const chatMessage = {
         from: 'user',
         text: message || undefined,
-        image: pendingImage || undefined
-      });
+        files: pendingFiles.length > 0 ? pendingFiles : undefined
+      };
+
+      chats[currentChatIndex].push(chatMessage);
 
       input.value = '';
-      pendingImage = null;
-      imagePreview.src = '';
-      imagePreviewContainer.classList.add('hidden');
+      pendingFiles = [];
+      previewContainer.innerHTML = '';
+      previewContainer.classList.add('hidden');
 
       renderChatMessages();
 
       setTimeout(() => {
-        let response = { from: 'bot', text: "hi" };
-        const lowerMsg = (message || '').toLowerCase();
-
-        if (lowerMsg === 'menu') {
-          response = {
-            from: 'bot',
-            text: 'Here are your options:',
-            options: ['register', 'subject selective', 'credits']
-          };
-        } else if (lowerMsg === 'subject selective') {
-          response = {
-            from: 'bot',
-            text: 'Select a subject:',
-            options: ['Subject1', 'Subject2', 'Subject3'],
-            column: true
-          };
-        } else if (['register', 'credits', 'subject1', 'subject2', 'subject3'].includes(lowerMsg)) {
-          const link = `https://university.example.com/${lowerMsg.replace(/\s+/g, '-').toLowerCase()}`;
-          response = {
-            from: 'bot',
-            text: `Here is the link to be accessed:\n${link}`
-          };
-        } else if (lowerMsg.includes('prof.peter available time')) {
-          response = {
-            from: 'bot',
-            text: 'Here is Prof. Peter’s availability:',
-            image: 'https://via.placeholder.com/400x200?text=Calendar+Preview'
-          };
-        }
-
-        chats[currentChatIndex].push(response);
-        renderChatMessages();
+        testCaseForBotResponse(message);
       }, 700);
     }
 
-function renderChatMessages() {
-  chat.innerHTML = '';
+    function testCaseForBotResponse(message) {
+      let response = { from: 'bot', text: "hi" };
+      const lowerMsg = (message || '').toLowerCase();
 
-  chats[currentChatIndex].forEach((msg, index) => {
-    const isUser = msg.from === 'user';
-    const div = document.createElement('div');
-    const alignmentClass = isUser ? 'justify-end' : 'justify-start';
-    const profileSide = `<div class="bg-gray-200 dark:bg-gray-600 w-10 h-10 rounded-full flex-shrink-0"></div>`;
+      if (lowerMsg === 'menu') {
+        response = {
+          from: 'bot',
+          text: 'Here are your options:',
+          options: ['register', 'subject selective', 'credits'] // bot respond as lists
+        };
+      } else if (lowerMsg === 'subject selective') {
+        response = {
+          from: 'bot',
+          text: 'Select a subject:',
+          options: ['Subject1', 'Subject2', 'Subject3'],
+          column: true
+        };
+      } else if (['register', 'credits', 'subject1', 'subject2', 'subject3'].includes(lowerMsg)) {
+        // bot respond as link
+        const link = `https://university.example.com/${lowerMsg.replace(/\s+/g, '-').toLowerCase()}`;
+        response = {
+          from: 'bot',
+          text: `Here is the link to be accessed:\n${link}`
+        };
+      } else if (lowerMsg.includes('prof.peter available time')) {
+        response = {
+          from: 'bot',
+          text: 'Here is Prof. Peter’s availability:',
+          image: 'https://via.placeholder.com/400x200?text=Calendar+Preview'
+        };
+      }
+      chats[currentChatIndex].push(response);
+      renderChatMessages();
+    }
 
-    let content = '';
+    function renderChatMessages() {
+      chat.innerHTML = '';
 
-    // ========== USER SIDE ==========
-    if (isUser) {
-      const isEditing = msg.editing;
+      chats[currentChatIndex].forEach((msg, index) => {
+        const isUser = msg.from === 'user';
+        const div = document.createElement('div');
+        const alignmentClass = isUser ? 'justify-end' : 'justify-start';
+        const profileSide = `<div class="bg-gray-200 dark:bg-gray-600 w-10 h-10 rounded-full flex-shrink-0"></div>`;
 
-      if (isEditing) {
-        content = `
+        let content = '';
+
+        // ========== USER SIDE ==========
+        if (isUser) {
+          const isEditing = msg.editing;
+
+          //for user to edit their input
+          if (isEditing) {
+            content = `
           <textarea class="w-full mt-2 p-2 rounded text-sm bg-white text-black" rows="3">${escapeHtml(msg.text)}</textarea>
           <div class="flex justify-end mt-1 space-x-2">
             <button onclick="saveEdit(${index}, this)" class="text-green-600 text-xs hover:underline">✅ Save</button>
             <button onclick="cancelEdit(${index})" class="text-gray-500 text-xs hover:underline">✖ Cancel</button>
-          </div>
+          </div>`;
+          } else {
+            content = `<div>${escapeHtml(msg.text)}</div>
+            <button onclick="startEdit(${index})"class="mt-2 ml-2 text-xs text-blue-500 hover:text-blue-700">
+            Edit
+            </button>
         `;
-      } else {
-        content = `
-          <div>${escapeHtml(msg.text)}</div>
-          <button onclick="startEdit(${index})"
-            class="mt-2 ml-2 text-xs text-blue-500 hover:text-blue-700">Edit</button>
-        `;
-
-        if (msg.history && msg.history.length > 0) {
-          content += `
-            <button onclick="toggleHistory(this)" class="text-xs text-gray-500 hover:text-gray-700 mt-2">ViewPast</button>
+        // for user to view their past input
+          if (msg.history && msg.history.length > 0) {
+            content += `
+            <button onclick="toggleHistory(this)" class="text-xs text-gray-500 hover:text-gray-700 mt-2">
+              ViewPast
+            </button>
             <div class="hidden mt-2 text-xs bg-gray-100 dark:bg-gray-600 rounded p-2">
               ${msg.history.map(h => `<div class="mb-2">${escapeHtml(h.text || '')}</div>`).join('')}
             </div>
           `;
-        }
-      }
+            }
+            // handle user's images and files
+            if (msg.files && Array.isArray(msg.files)) {
+              msg.files.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                  content += `<img src="${file.dataUrl}" alt="${file.name}" class="mt-2 rounded-lg max-w-[100px] max-h-64" />`;
+                } else {
+                  content += `<div class="mt-2 text-sm text-gray-800">📄 ${escapeHtml(file.name)} (${Math.round(file.size / 1024)} KB)</div>`;
+                }
+              });
+            }
+          }
 
-      div.className = `flex ${alignmentClass} items-start space-x-2 mb-2 w-full`;
-      div.innerHTML = `
+          div.className = `flex ${alignmentClass} items-start space-x-2 mb-2 w-full`;
+          div.innerHTML = `
         <div class="bg-gray-200 dark:bg-gray-700 rounded-lg px-4 py-3 max-w-[70%] w-fit text-black dark:text-white">
           ${content}
         </div>
         ${profileSide}`;
-    }
+        }
 
-    // ========== BOT SIDE ==========
-    else {
-      let copyText = '';
-      if (msg.text) {
-        const urlMatch = msg.text.match(/https?:\/\/[^\s]+/);
-        if (urlMatch) {
-          const link = urlMatch[0];
-          const before = msg.text.split(link)[0].trim();
-          const hostname = new URL(link).hostname.replace(/^www\./, '');
-          copyText = before ? `${before}: ${hostname}` : `Link: ${hostname}`;
-          if (before) content += `<div>${escapeHtml(before)}</div>`;
-          content += `
+        // ========== BOT SIDE ==========
+        else {
+          let copyText = '';
+          if (msg.text) {
+            const urlMatch = msg.text.match(/https?:\/\/[^\s]+/);
+            if (urlMatch) {
+              const link = urlMatch[0];
+              const before = msg.text.split(link)[0].trim();
+              const hostname = new URL(link).hostname.replace(/^www\./, '');
+              copyText = before ? `${before}: ${hostname}` : `Link: ${hostname}`;
+              if (before) content += `<div>${escapeHtml(before)}</div>`;
+              content += `
             <a href="${link}" target="_blank"
               class="block border rounded-lg overflow-hidden shadow hover:shadow-lg transition w-full max-w-xs sm:max-w-sm bg-white dark:bg-gray-700 mt-2">
-              <img src="https://onlinepngtools.com/images/png/illustrations/convert-png-to-data-uri.png"
-                class="w-full h-40 object-cover" />
+               <img src="https://onlinepngtools.com/images/png/illustrations/convert-png-to-data-uri.png"
+                 class="w-full h-40 object-cover" />
               <div class="p-3">
                 <div class="font-semibold text-sm mb-1">This is an info</div>
                 <div class="text-blue-500 text-xs mt-2">${hostname}</div>
               </div>
             </a>`;
-        } else {
-          copyText = msg.text;
-          content += `<div>${escapeHtml(msg.text)}</div>`;
-        }
-      }
+            } else {
+              copyText = msg.text;
+              content += `<div>${escapeHtml(msg.text)}</div>`;
+            }
+          }
 
-      if (msg.image) {
-        content += `<img src="${msg.image}" class="mt-2 rounded-lg w-full max-w-full h-auto object-contain" />`;
-      }
+          if (msg.image) {
+            content += `<img src="${msg.image}" class="mt-2 rounded-lg w-full max-w-full h-auto object-contain" />`;
+          }
 
-      const copyButton = copyText
-        ? `<button onclick="copyToClipboard('${copyText.replace(/'/g, "\\'")}', this)"
+          const copyButton = copyText
+            ? `<button onclick="copyToClipboard('${copyText.replace(/'/g, "\\'")}', this)"
                    class="mt-3 text-xs text-blue-500 hover:text-blue-700">Copy</button>`
-        : '';
+            : '';
 
-      let optionsHtml = '';
-      if (msg.options) {
-        const layout = 'flex-col space-y-2';
-        optionsHtml = `<div class="mt-2 flex ${layout}">` +
-          msg.options.map(opt =>
-            `<button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
+          let optionsHtml = '';
+          if (msg.options) {
+            const layout = 'flex-col space-y-2';
+            optionsHtml = `<div class="mt-2 flex ${layout}">` +
+              msg.options.map(opt =>
+                `<button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
               onclick="sendMessage('${opt}')">${opt}</button>`
-          ).join('') +
-          `</div>`;
-      }
+              ).join('') +
+              `</div>`;
+          }
 
-      let historyHtml = '';
-      if (msg.history && msg.history.length > 0) {
-        historyHtml = `
+          let historyHtml = '';
+          if (msg.history && msg.history.length > 0) {
+            historyHtml = `
           <button onclick="toggleHistory(this)" class="text-xs text-gray-500 hover:text-gray-700 mt-2">ViewPast</button>
           <div class="hidden mt-2 text-xs bg-gray-100 dark:bg-gray-600 rounded p-2">
             ${msg.history.map(h => `
@@ -346,10 +380,10 @@ function renderChatMessages() {
             `).join('')}
           </div>
         `;
-      }
+          }
 
-      div.className = `flex ${alignmentClass} items-start space-x-2 mb-2 w-full`;
-      div.innerHTML = `
+          div.className = `flex ${alignmentClass} items-start space-x-2 mb-2 w-full`;
+          div.innerHTML = `
         ${profileSide}
         <div class="bg-gray-200 dark:bg-gray-700 rounded-lg px-4 py-3 max-w-[70%] w-fit text-black dark:text-white">
           ${content}
@@ -357,114 +391,71 @@ function renderChatMessages() {
           ${copyButton}
           ${historyHtml}
         </div>`;
+        }
+
+        chat.appendChild(div);
+      });
+
+      chat.scrollTop = chat.scrollHeight;
     }
 
-    chat.appendChild(div);
-  });
+    // functions for edit message
+    function startEdit(index) {
+      chats[currentChatIndex][index].editing = true;
+      renderChatMessages();
+    }
+    function cancelEdit(index) {
+      delete chats[currentChatIndex][index].editing;
+      renderChatMessages();
+    }
+    function saveEdit(index, btn) {
+      // Find the closest message bubble (user-side)
+      const bubble = btn.closest('.flex.items-start');
+      // Scoped textarea inside the current bubble
+      const textarea = bubble.querySelector('textarea');
 
-  chat.scrollTop = chat.scrollHeight;
-}
+      const newText = textarea.value.trim();
+      if (!newText) return;
 
-function startEdit(index) {
-  chats[currentChatIndex][index].editing = true;
-  renderChatMessages();
-}
+      const msg = chats[currentChatIndex][index];
 
-function cancelEdit(index) {
-  delete chats[currentChatIndex][index].editing;
-  renderChatMessages();
-}
+      // Skip if text hasn't changed
+      if (msg.text === newText) {
+        msg.editing = false;
+        renderChatMessages();
+        return;
+      }
 
-function saveEdit(index, btn) {
-  // Find the closest message bubble (user-side)
-  const bubble = btn.closest('.flex.items-start');
+      // Save previous version to history
+      if (!msg.history) msg.history = [];
+      msg.history.push({ text: msg.text });
 
-  if (!bubble) {
-    console.error('❌ Could not find message bubble for index', index);
-    return;
-  }
+      msg.text = newText;
+      msg.editing = false;
 
-  // Scoped textarea inside the current bubble
-  const textarea = bubble.querySelector('textarea');
+      // Update corresponding bot reply if it's next in line
+      const botMsg = chats[currentChatIndex][index + 1];
+      if (botMsg && botMsg.from === 'bot') {
+        if (!botMsg.history) botMsg.history = [];
+        botMsg.history.push({
+          text: botMsg.text,
+          image: botMsg.image || null,
+        });
 
-  if (!textarea) {
-    console.error('❌ Textarea not found inside bubble at index', index);
-    return;
-  }
+        const updated = testCaseForBotResponse(newText);
 
-  const newText = textarea.value.trim();
-  if (!newText) return;
+        botMsg.text = updated.text;
+        botMsg.image = updated.image || null;
+        botMsg.options = updated.options || null;
+        botMsg.column = updated.column || false;
+      }
+      renderChatMessages();
+    }
 
-  const msg = chats[currentChatIndex][index];
-
-  // Skip if text hasn't changed
-  if (msg.text === newText) {
-    msg.editing = false;
-    renderChatMessages();
-    return;
-  }
-
-  // Save previous version to history
-  if (!msg.history) msg.history = [];
-  msg.history.push({ text: msg.text });
-
-  msg.text = newText;
-  msg.editing = false;
-
-  // Update corresponding bot reply if it's next in line
-  const botMsg = chats[currentChatIndex][index + 1];
-  if (botMsg && botMsg.from === 'bot') {
-    if (!botMsg.history) botMsg.history = [];
-    botMsg.history.push({
-      text: botMsg.text,
-      image: botMsg.image || null,
-    });
-
-    const updated = generateBotResponse(newText);
-
-    botMsg.text = updated.text;
-    botMsg.image = updated.image || null;
-    botMsg.options = updated.options || null;
-    botMsg.column = updated.column || false;
-  }
-
-  renderChatMessages();
-}
-
-function generateBotResponse(inputText) {
-  const lowerMsg = inputText.toLowerCase();
-
-  if (lowerMsg === 'menu') {
-    return {
-      text: 'Here are your options:',
-      options: ['register', 'subject selective', 'credits']
-    };
-  } else if (lowerMsg === 'subject selective') {
-    return {
-      text: 'Select a subject:',
-      options: ['Subject1', 'Subject2', 'Subject3'],
-      column: true
-    };
-  } else if (['register', 'credits', 'subject1', 'subject2', 'subject3'].includes(lowerMsg)) {
-    const link = `https://university.example.com/${lowerMsg.replace(/\s+/g, '-').toLowerCase()}`;
-    return {
-      text: `Here is the link to be accessed:\n${link}`
-    };
-  } else if (lowerMsg.includes('prof.peter available time')) {
-    return {
-      text: 'Here is Prof. Peter’s availability:',
-      image: 'https://via.placeholder.com/400x200?text=Calendar+Preview'
-    };
-  }
-
-  return { text: 'hi' };
-}
-
-
-function toggleHistory(btn) {
-  const box = btn.nextElementSibling;
-  if (box) box.classList.toggle('hidden');
-}
+    function toggleHistory(btn) {
+      const box = btn.nextElementSibling;
+      if (box) box.classList.toggle('hidden');
+    }
 
     function renderChatList() {
       chatList.innerHTML = '';
@@ -489,6 +480,7 @@ function toggleHistory(btn) {
         .replace(/'/g, "&#039;");
     }
 
+    // function: copy bot's answer
     function copyToClipboard(text, button) {
       navigator.clipboard.writeText(text).then(() => {
         const original = button.innerText;
@@ -497,7 +489,7 @@ function toggleHistory(btn) {
       });
     }
 
-    newChat(); // Initialize
+    newChat(); // Initialize new chat
   </script>
 </body>
 

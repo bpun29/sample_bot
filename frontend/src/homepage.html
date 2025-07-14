@@ -334,14 +334,15 @@
               const hostname = new URL(link).hostname.replace(/^www\./, '');
               copyText = before ? `${before}: ${hostname}` : `Link: ${hostname}`;
               if (before) content += `<div>${escapeHtml(before)}</div>`;
+              // contains preview picture of link, link's article, and link(url)
               content += `
                 <a href="${link}" target="_blank"
                   class="block border rounded-lg overflow-hidden shadow hover:shadow-lg transition w-full max-w-xs sm:max-w-sm bg-white dark:bg-gray-700 mt-2">
-                  <img src="https://onlinepngtools.com/images/png/illustrations/convert-png-to-data-uri.png" //the preview image
+                  <img src="https://onlinepngtools.com/images/png/illustrations/convert-png-to-data-uri.png" 
                     class="w-full h-40 object-cover" />
                   <div class="p-3">
-                    <div class="font-semibold text-sm mb-1">This is an info</div> // link's article
-                    <div class="text-blue-500 text-xs mt-2">${hostname}</div> // the link (url)
+                    <div class="font-semibold text-sm mb-1">This is an info</div>
+                    <div class="text-blue-500 text-xs mt-2">${hostname}</div>
                   </div>
                 </a>`;
             } else {

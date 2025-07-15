@@ -90,7 +90,6 @@
     </div>
   </div>
 
-  <!-- JavaScript -->
   <script>
     const chat = document.getElementById('chat');
     const input = document.getElementById('input');
@@ -112,8 +111,7 @@
 
     // Theme
     if (localStorage.getItem('theme') === 'dark') {
-      document.documentElement.classList.add('dark');
-    }
+      document.documentElement.classList.add('dark');}
     toggleDarkModeBtn.addEventListener('click', () => {
       const isDark = document.documentElement.classList.toggle('dark');
       localStorage.setItem('theme', isDark ? 'dark' : 'light');
@@ -152,8 +150,8 @@
       fileInput.click();
     });
 
-    let pendingFiles = []; // Holds all selected files and images
-
+    // Holds all selected files and images
+    let pendingFiles = []; 
     fileInput.addEventListener('change', function () {
       const files = Array.from(this.files);
       if (files.length === 0) return;
@@ -180,7 +178,7 @@
           // For non-image files, just show filename
           const fileInfo = document.createElement('p');
           fileInfo.textContent = `📄 ${file.name} (${Math.round(file.size / 1024)} KB)`;
-          fileInfo.className = 'text-gray-700';
+          fileInfo.className = 'text-gray-700 dark:text-white';
           previewContainer.appendChild(fileInfo);
 
           pendingFiles.push({
@@ -228,36 +226,36 @@
     }
 
     function testCaseForBotResponse(message) {
-      let response = { from: 'bot', text: "hi" };
+      let response = { from: 'bot', text: "this is an example answer" }; // dumb answer
       const lowerMsg = (message || '').toLowerCase();
 
       if (lowerMsg === 'menu') {
         response = {
           from: 'bot',
           text: 'Here are your options:',
-          options: ['register', 'subject selective', 'credits'] // bot respond as lists
+          options: ['register', 'subject selective', 'credits']
         };
-      } else if (lowerMsg === 'subject selective') {
-        response = {
-          from: 'bot',
-          text: 'Select a subject:',
-          options: ['Subject1', 'Subject2', 'Subject3'],
-          column: true
-        };
-      } else if (['register', 'credits', 'subject1', 'subject2', 'subject3'].includes(lowerMsg)) {
-        // bot respond as link
+      } else if (['register', 'credits'].includes(lowerMsg)) {
         const link = `https://university.example.com/${lowerMsg.replace(/\s+/g, '-').toLowerCase()}`;
         response = {
           from: 'bot',
           text: `Here is the link to be accessed:\n${link}`
         };
-      } else if (lowerMsg.includes('prof.peter available time')) {
+      } else if (lowerMsg === 'subject selective') {
+        // Simulate a bot message with 3 subject links in carousel
         response = {
           from: 'bot',
-          text: 'Here is Prof. Peter’s availability:',
-          image: 'https://via.placeholder.com/400x200?text=Calendar+Preview'
+          text: 'Here are the subjects:\nhttps://university.example.com/subject1 https://university.example.com/subject2 https://university.example.com/subject3'
         };
-      }
+      } 
+      // else if (lowerMsg.includes('prof.peter available time')) { -> still not work, i want it to show as calendar
+      //   response = {
+      //     from: 'bot',
+      //     text: 'Here is Prof. Peter’s availability:',
+      //     image: 'https://via.placeholder.com/400x200?text=Calendar+Preview'
+      //   };
+      // }
+
       chats[currentChatIndex].push(response);
       renderChatMessages();
     }
@@ -276,31 +274,31 @@
         // ========== USER SIDE ==========
         if (isUser) {
           const isEditing = msg.editing;
-
           //for user to edit their input
           if (isEditing) {
             content = `
-          <textarea class="w-full mt-2 p-2 rounded text-sm bg-white text-black" rows="3">${escapeHtml(msg.text)}</textarea>
-          <div class="flex justify-end mt-1 space-x-2">
-            <button onclick="saveEdit(${index}, this)" class="text-green-600 text-xs hover:underline">✅ Save</button>
-            <button onclick="cancelEdit(${index})" class="text-gray-500 text-xs hover:underline">✖ Cancel</button>
-          </div>`;
+              <textarea class="w-full mt-2 p-2 rounded text-sm bg-white text-black" rows="3">${escapeHtml(msg.text)}</textarea>
+              <div class="flex justify-end mt-1 space-x-2">
+                <button onclick="saveEdit(${index}, this)" class="text-green-600 text-xs hover:underline">✅ Save</button>
+                <button onclick="cancelEdit(${index})" class="text-gray-500 text-xs hover:underline">✖ Cancel</button>
+              </div>`;
           } else {
-            content = `<div>${escapeHtml(msg.text)}</div>
-            <button onclick="startEdit(${index})"class="mt-2 ml-2 text-xs text-blue-500 hover:text-blue-700">
-            Edit
-            </button>
-        `;
-        // for user to view their past input
-          if (msg.history && msg.history.length > 0) {
-            content += `
-            <button onclick="toggleHistory(this)" class="text-xs text-gray-500 hover:text-gray-700 mt-2">
-              ViewPast
-            </button>
-            <div class="hidden mt-2 text-xs bg-gray-100 dark:bg-gray-600 rounded p-2">
-              ${msg.history.map(h => `<div class="mb-2">${escapeHtml(h.text || '')}</div>`).join('')}
-            </div>
-          `;
+            if (msg.files && Array.isArray(msg.files)) { } else {
+              content = `<div>${escapeHtml(msg.text)}</div>
+                <button onclick="startEdit(${index})"class="mt-2 ml-2 text-xs text-blue-500 hover:text-blue-700">
+                Edit
+                </button>`;
+              // for user to view their past input
+              if (msg.history && msg.history.length > 0) {
+                content += `
+                  <button onclick="toggleHistory(this)" class="text-xs text-gray-500 hover:text-gray-700 mt-2">
+                    ViewPast
+                  </button>
+                  <div class="hidden mt-2 text-xs bg-gray-100 dark:bg-gray-600 rounded p-2">
+                    ${msg.history.map(h => `<div class="mb-2">${escapeHtml(h.text || '')}</div>`).join('')}
+                  </div>
+                `;
+              }
             }
             // handle user's images and files
             if (msg.files && Array.isArray(msg.files)) {
@@ -308,7 +306,7 @@
                 if (file.type.startsWith('image/')) {
                   content += `<img src="${file.dataUrl}" alt="${file.name}" class="mt-2 rounded-lg max-w-[100px] max-h-64" />`;
                 } else {
-                  content += `<div class="mt-2 text-sm text-gray-800">📄 ${escapeHtml(file.name)} (${Math.round(file.size / 1024)} KB)</div>`;
+                  content += `<div class="mt-2 text-sm text-gray-800 dark:text-white">📄 ${escapeHtml(file.name)} (${Math.round(file.size / 1024)} KB)</div>`;
                 }
               });
             }
@@ -316,35 +314,61 @@
 
           div.className = `flex ${alignmentClass} items-start space-x-2 mb-2 w-full`;
           div.innerHTML = `
-        <div class="bg-gray-200 dark:bg-gray-700 rounded-lg px-4 py-3 max-w-[70%] w-fit text-black dark:text-white">
-          ${content}
-        </div>
-        ${profileSide}`;
+            <div class="bg-gray-200 dark:bg-gray-700 rounded-lg px-4 py-3 max-w-[70%] w-fit text-black dark:text-white">
+            ${content}
+            </div>
+          ${profileSide}`;
         }
 
         // ========== BOT SIDE ==========
         else {
           let copyText = '';
           if (msg.text) {
-            const urlMatch = msg.text.match(/https?:\/\/[^\s]+/);
-            // bot answer with link
-            if (urlMatch) {
-              const link = urlMatch[0];
-              const before = msg.text.split(link)[0].trim();
-              const hostname = new URL(link).hostname.replace(/^www\./, '');
-              copyText = before ? `${before}: ${hostname}` : `Link: ${hostname}`;
+            const urlMatches = [...msg.text.matchAll(/https?:\/\/[^\s]+/g)];
+            if (urlMatches.length > 0) {
+              const before = msg.text.split(urlMatches[0][0])[0].trim();
               if (before) content += `<div>${escapeHtml(before)}</div>`;
-              // contains preview picture of link, link's article, and link(url)
+              const totalLinks = urlMatches.length;
+              const hasMultiple = totalLinks > 1;
+              // Start carousel wrapper
               content += `
-                <a href="${link}" target="_blank"
-                  class="block border rounded-lg overflow-hidden shadow hover:shadow-lg transition w-full max-w-xs sm:max-w-sm bg-white dark:bg-gray-700 mt-2">
-                  <img src="https://onlinepngtools.com/images/png/illustrations/convert-png-to-data-uri.png" 
-                    class="w-full h-40 object-cover" />
-                  <div class="p-3">
-                    <div class="font-semibold text-sm mb-1">This is an info</div>
-                    <div class="text-blue-500 text-xs mt-2">${hostname}</div>
-                  </div>
-                </a>`;
+                <div class="relative">
+                  <div id="carousel-${msg.id}" class="flex overflow-x-auto scroll-smooth space-x-4 py-2 px-8">`;
+              // Loop through each URL and generate a card
+              for (const match of urlMatches) {
+                const link = match[0];
+                const hostname = new URL(link).hostname.replace(/^www\./, '');
+                const linkText = decodeURIComponent(link.split('/').pop());
+                copyText = before ? `${before}: ${hostname}` : `Link: ${hostname}`;
+                content += `
+                  <a href="${link}" target="_blank"
+                    class="flex-shrink-0 w-full sm:w-[22rem] border rounded-lg overflow-hidden shadow hover:shadow-lg transition bg-white dark:bg-gray-700 mx-auto">
+                    <img src="https://onlinepngtools.com/images/png/illustrations/convert-png-to-data-uri.png" class="w-full h-32 object-cover" />
+                    <div class="p-2">
+                      <div class="font-semibold text-sm mb-1">${escapeHtml(linkText)}</div>
+                      <div class="text-blue-500 text-xs mt-1">${hostname}</div>
+                    </div>
+                  </a>`;
+              }
+              // Close carousel container
+              content += `</div>`;
+              // Add navigation buttons only if there are multiple links -> still not work when click buttons
+              // if (hasMultiple) {
+              //   content += `
+              //     <button onclick="scrollCarousel('${msg.id}', -1)" class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white dark:bg-gray-700 border rounded-full shadow p-1 z-10">
+              //       <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              //         <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+              //       </svg>
+              //     </button>
+              //     <button onclick="scrollCarousel('${msg.id}', 1)" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white dark:bg-gray-700 border rounded-full shadow p-1 z-10">
+              //       <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              //         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+              //       </svg>
+              //     </button>`;
+              // }
+
+              // Close outer container
+              content += `</div>`;
             } else {
               copyText = msg.text;
               content += `<div>${escapeHtml(msg.text)}</div>`;
@@ -355,18 +379,15 @@
           }
 
           const copyButton = copyText
-            ? `<button onclick="copyToClipboard('${copyText.replace(/'/g, "\\'")}', this)"
-                   class="mt-3 text-xs text-blue-500 hover:text-blue-700">Copy</button>`
-            : '';
+            ? `<button onclick="copyToClipboard('${copyText.replace(/'/g, "\\'")}', this)" class="mt-3 text-xs text-blue-500 hover:text-blue-700">Copy</button>` : '';
 
           let optionsHtml = '';
           if (msg.options) {
             const layout = 'flex-col space-y-2';
             optionsHtml = `<div class="mt-2 flex ${layout}">` +
               msg.options.map(opt =>
-                `<button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-              onclick="sendMessage('${opt}')">${opt}</button>`
-              ).join('') +
+                `<button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm" onclick="sendMessage('${opt}')">
+                  ${opt}</button>`).join('') +
               `</div>`;
           }
 
@@ -385,18 +406,16 @@
 
           div.className = `flex ${alignmentClass} items-start space-x-2 mb-2 w-full`;
           div.innerHTML = `
-        ${profileSide}
-        <div class="bg-gray-200 dark:bg-gray-700 rounded-lg px-4 py-3 max-w-[70%] w-fit text-black dark:text-white">
-          ${content}
-          ${optionsHtml}
-          ${copyButton}
-          ${historyHtml}
-        </div>`;
+            ${profileSide}
+            <div class="bg-gray-200 dark:bg-gray-700 rounded-lg px-4 py-3 max-w-[70%] w-fit text-black dark:text-white">
+              ${content}
+              ${optionsHtml}
+              ${copyButton}
+              ${historyHtml}
+            </div>`;
         }
-
         chat.appendChild(div);
       });
-
       chat.scrollTop = chat.scrollHeight;
     }
 
@@ -489,8 +508,20 @@
         setTimeout(() => button.innerText = original, 1000);
       });
     }
+    // scrollCarousel feature
+    // function scrollCarousel(id, direction) {
+    //     const container = document.getElementById(`carousel-${id}`);
+    //     const scrollAmount = 300;
+    //     if (container) {
+    //       container.scrollBy({
+    //         left: direction * scrollAmount,
+    //         behavior: 'smooth'
+    //       });
+    //     }
+    //   }
 
     newChat(); // Initialize new chat
   </script>
 </body>
+
 </html>
